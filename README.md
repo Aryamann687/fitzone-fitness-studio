@@ -1,18 +1,33 @@
-# Fitzone Fitness Studio
+# Fitzone Fitness Studio 💪
 
-A responsive fitness studio website built using HTML, CSS, and JavaScript.
+A responsive gym website built using HTML, CSS, and JavaScript.  
+Deployed live using Netlify with GitHub auto-deployment.
 
-## Features
-- Fully responsive (mobile-friendly)
-- Modern UI design
-- BMI calculator
-- Multiple pages (Home, About, Services, Trainers, Gallery, Contact)
-- Deployed on Netlify
+## 🔗 Live Demo
+👉 https://fitzone-fitness-studio.netlify.app
 
-## Tech Stack
-- HTML5
-- CSS3
-- JavaScript
+## 📌 Features
+- Modern and responsive UI
+- Gym services and trainer sections
+- Image gallery
+- Contact & location details
+- Mobile-friendly design
 
-## Live Demo
-https://endearing-capybara-0e6288.netlify.app/
+## 🛠️ Tech Stack
+- HTML5  
+- CSS3  
+- JavaScript  
+- GitHub  
+- Netlify (Hosting)
+
+## 🚀 Deployment
+This project is deployed on *Netlify* and connected to *GitHub*.  
+Any push to the main branch automatically updates the live site.
+
+## 📂 Project Structure
+
+├── index.html ├── css/ │   └── style.css ├── js/ │   └── script.js ├── images/ └── README.md
+
+## 👨‍💻 Author
+*Aryamann Srivastava*  
+Computer Science Engineering Student

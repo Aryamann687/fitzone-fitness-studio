@@ -43,6 +43,43 @@ document.addEventListener("DOMContentLoaded", () => {
       link.classList.add("active")
     }
   })
+
+  const navAuth = document.querySelector(".nav-auth")
+  if (navAuth) {
+    getMe().then((user) => {
+      if (user) {
+        navAuth.innerHTML = `<a href="#" id="logoutBtn" class="btn btn-login">Logout</a>`
+        const logoutBtn = document.getElementById("logoutBtn")
+        if (logoutBtn) {
+          logoutBtn.addEventListener("click", async (e) => {
+            e.preventDefault()
+            try {
+              await apiRequest("/api/auth/logout", { method: "POST" })
+            } finally {
+              window.location.href = "index.html"
+            }
+          })
+        }
+
+        if (currentPage === "login.html" || currentPage === "signup.html") {
+          window.location.href = "index.html"
+        }
+      } else {
+        if (currentPage === "login.html" && getQueryParam("registered") === "1") {
+          const messageDiv = document.getElementById("loginMessage")
+          setMessage(messageDiv, "Account created. Please log in.", "success")
+        }
+
+        if (
+          document.body?.dataset?.requireAuth === "true" &&
+          currentPage !== "login.html" &&
+          currentPage !== "signup.html"
+        ) {
+          window.location.href = `login.html?next=${encodeURIComponent(currentPage)}`
+        }
+      }
+    })
+  }
 })
 
 // Form Validation Utility
@@ -76,26 +113,77 @@ function validateForm(formId) {
   return isValid
 }
 
+function getQueryParam(name) {
+  const params = new URLSearchParams(window.location.search)
+  return params.get(name)
+}
+
+async function apiRequest(url, options) {
+  const res = await fetch(url, {
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json", ...(options?.headers || {}) },
+    ...options,
+  })
+
+  const contentType = res.headers.get("content-type") || ""
+  const body = contentType.includes("application/json") ? await res.json() : null
+
+  if (!res.ok) {
+    const error = body?.error || "REQUEST_FAILED"
+    const message = body?.message || ""
+    const err = new Error(message || error)
+    err.code = error
+    throw err
+  }
+
+  return body
+}
+
+async function getMe() {
+  try {
+    const data = await apiRequest("/api/auth/me", { method: "GET" })
+    return data?.user || null
+  } catch (_e) {
+    return null
+  }
+}
+
+function setMessage(messageDiv, message, kind) {
+  if (!messageDiv) return
+  messageDiv.textContent = message
+  messageDiv.classList.remove("success")
+  messageDiv.classList.remove("error")
+  if (kind) messageDiv.classList.add(kind)
+}
+
 // Form Submission Handlers
-function handleLogin(e) {
+async function handleLogin(e) {
   e.preventDefault()
   const email = document.getElementById("login-email").value
   const password = document.getElementById("login-password").value
   const messageDiv = document.getElementById("loginMessage")
 
-  if (email && password) {
-    messageDiv.textContent = "Login successful! Redirecting..."
-    messageDiv.classList.add("success")
-    setTimeout(() => {
-      window.location.href = "index.html"
-    }, 1500)
-  } else {
-    messageDiv.textContent = "Please fill in all fields"
-    messageDiv.classList.add("error")
+  if (!email || !password) {
+    setMessage(messageDiv, "Please fill in all fields", "error")
+    return
+  }
+
+  try {
+    setMessage(messageDiv, "Logging in...", "success")
+    await apiRequest("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    })
+    const next = getQueryParam("next")
+    window.location.href = next ? next : "index.html"
+  } catch (err) {
+    const code = err?.code
+    if (code === "INVALID_CREDENTIALS") setMessage(messageDiv, "Invalid email or password", "error")
+    else setMessage(messageDiv, "Login failed. Please try again.", "error")
   }
 }
 
-function handleSignup(e) {
+async function handleSignup(e) {
   e.preventDefault()
   const name = document.getElementById("signup-name").value
   const email = document.getElementById("signup-email").value
@@ -127,11 +215,20 @@ function handleSignup(e) {
     return
   }
 
-  messageDiv.textContent = "Account created successfully! Redirecting to login..."
-  messageDiv.classList.add("success")
-  setTimeout(() => {
-    window.location.href = "login.html"
-  }, 1500)
+  try {
+    setMessage(messageDiv, "Creating account...", "success")
+    await apiRequest("/api/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ name, email, password }),
+    })
+    window.location.href = "login.html?registered=1"
+  } catch (err) {
+    const code = err?.code
+    if (code === "EMAIL_IN_USE") setMessage(messageDiv, "Email is already registered", "error")
+    else if (code === "WEAK_PASSWORD") setMessage(messageDiv, "Password must be at least 6 characters", "error")
+    else if (code === "INVALID_EMAIL") setMessage(messageDiv, "Please enter a valid email", "error")
+    else setMessage(messageDiv, "Sign up failed. Please try again.", "error")
+  }
 }
 
 function handleContactSubmit(e) {
